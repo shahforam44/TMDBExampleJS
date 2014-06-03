@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <script type="text/javascript" src="js/jquery-1.10.2.min.js"></script>
+    <style>
+        .poster {
+            width: 200px;
+            height: 300px;
+        }
+
+        .data {
+            display: inline-block;
+            float: left;
+            padding: 1em;
+            background-color: lavender;
+            max-width: 200px;
+            height: 400px;
+
+        }
+
+        .wrapper {
+            display: block;
+            background-color: lavender;
+        }
+
+        .title {
+            max-width: 200px;
+        }
+
+        #outerDiv {
+            /*margin-left: auto;*/
+            /*margin-right: auto;*/
+            background-color: aquamarine;
+            flex-direction: row-reverse;
+
+        }
+    </style>
+    <script type="text/javascript">
+        window.onload = function () {
+            var url = 'http://api.themoviedb.org/3/search/person?api_key=5cdefa62b94fdae625e24542e2a56b4a&query=brad%20pitt';
+            $.ajax(url).done(function (values) {
+                id = values.results[0].id;
+                var url2 = 'http://api.themoviedb.org/3/person/' + id + '/movie_credits?api_key=5cdefa62b94fdae625e24542e2a56b4a';
+                $.ajax(url2).done(function (values) {
+
+                    var elems = sortByDate(values.cast);
+                    $div1 = displayData(elems);
+                    $div1.appendTo('#outerDiv');
+
+//                    $("<div>********crew*******</div>").appendTo($div2);
+
+                    var elems2 = sortByDate(values.crew);
+                    $div2 = displayData(elems2);
+                    $div2.appendTo('#outerDiv');
+
+                });
+
+                function displayData(elems) {
+                    $div = $('<div>');
+                    for (var prop in elems) {
+                        if (elems[prop].poster_path != null)
+                            var src = 'http://image.tmdb.org/t/p/w342' + elems[prop].poster_path;
+                        else
+                            var src = "image/temp.jpg";
+                        $divData = $("<div>" +
+                                "<span class='wrapper'><img src=" + src + "  class='poster'/></span> " +
+                                "<span class='wrapper'><span class='title'>" + elems[prop].title + "</span></span>" +
+                                "<span class='wrapper'>" + elems[prop].release_date + "</span>" +
+                                "</div>");
+                        $divData.addClass("data");
+                        ($divData).appendTo($div);
+                    }
+                    return $div;
+
+                }
+
+                function sortByDate(obj) {
+                    var elems = $.makeArray(obj);
+                    elems.sort(function (a, b) {
+                        return new Date(a.release_date) < new Date(b.release_date);
+                    });
+                    return elems;
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+<div id="outerDiv">
+
+</div>
+
+</body>
+</html>
