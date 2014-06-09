@@ -4,92 +4,139 @@
     <title></title>
     <script type="text/javascript" src="js/jquery-1.10.2.min.js"></script>
     <style>
-        .poster {
-            width: 200px;
-            height: 300px;
+        body {
+            font-family: sans-serif;
+            font-size: small;
+            color: #196274;
+        }
+
+        #searchDiv {
+            display: flex;
+            justify-content: center;
+            padding: .5em;
+            background-color: gainsboro;
+        }
+
+        #actor {
+            text-align: center;
+            padding: .3em;
+            border: 1px solid gainsboro;
+            color: dimgray;
+            border-radius: .5em;
+        }
+
+        #outerDiv {
+
+        }
+
+        .innerDiv {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            background-color: cadetblue;
         }
 
         .data {
-            display: inline-block;
-            float: left;
             padding: 1em;
             background-color: lavender;
-            max-width: 200px;
-            height: 400px;
-
+            width: 210px;
+            margin: 1em;
         }
 
         .wrapper {
             display: block;
-            background-color: lavender;
+            text-align: center;
+        }
+
+        .poster {
+            width: 210px;
+            height: 300px;
         }
 
         .title {
-            max-width: 200px;
         }
 
-        #outerDiv {
-            /*margin-left: auto;*/
-            /*margin-right: auto;*/
-            background-color: aquamarine;
-            flex-direction: row-reverse;
-
-        }
     </style>
     <script type="text/javascript">
         window.onload = function () {
-            var url = 'http://api.themoviedb.org/3/search/person?api_key=5cdefa62b94fdae625e24542e2a56b4a&query=brad%20pitt';
-            $.ajax(url).done(function (values) {
-                id = values.results[0].id;
-                var url2 = 'http://api.themoviedb.org/3/person/' + id + '/movie_credits?api_key=5cdefa62b94fdae625e24542e2a56b4a';
-                $.ajax(url2).done(function (values) {
-
-                    var elems = sortByDate(values.cast);
-                    $div1 = displayData(elems);
-                    $div1.appendTo('#outerDiv');
-
-//                    $("<div>********crew*******</div>").appendTo($div2);
-
-                    var elems2 = sortByDate(values.crew);
-                    $div2 = displayData(elems2);
-                    $div2.appendTo('#outerDiv');
-
-                });
-
-                function displayData(elems) {
-                    $div = $('<div>');
-                    for (var prop in elems) {
-                        if (elems[prop].poster_path != null)
-                            var src = 'http://image.tmdb.org/t/p/w342' + elems[prop].poster_path;
-                        else
-                            var src = "image/temp.jpg";
-                        $divData = $("<div>" +
-                                "<span class='wrapper'><img src=" + src + "  class='poster'/></span> " +
-                                "<span class='wrapper'><span class='title'>" + elems[prop].title + "</span></span>" +
-                                "<span class='wrapper'>" + elems[prop].release_date + "</span>" +
-                                "</div>");
-                        $divData.addClass("data");
-                        ($divData).appendTo($div);
+            $('#actor').keydown(function (e) {
+                if (e.keyCode == 13) {
+                    //Create New Cache
+                    if (getActorDetail.actorCache == undefined) {
+                        getActorDetail.actorCache = {};
                     }
-                    return $div;
-
-                }
-
-                function sortByDate(obj) {
-                    var elems = $.makeArray(obj);
-                    elems.sort(function (a, b) {
-                        return new Date(a.release_date) < new Date(b.release_date);
-                    });
-                    return elems;
+                    getActorDetail(this.value);
                 }
             });
+            function getActorDetail(actor) {
+                if (getActorDetail.actorCache[actor]) {
+                    callDisplay(getActorDetail.actorCache[actor]);
+                    return;
+                }
+
+                var url = 'http://api.themoviedb.org/3/search/person?api_key=5cdefa62b94fdae625e24542e2a56b4a&query=' + decodeURIComponent(actor);//brad%20pitt';
+                $.ajax(url).done(function (values) {
+                    if (values.results.length != 0) {
+                        id = values.results[0].id;
+                        var url2 = 'http://api.themoviedb.org/3/person/' + id + '/movie_credits?api_key=5cdefa62b94fdae625e24542e2a56b4a';
+                        $.ajax(url2).done(function (values) {
+
+                            var elems = sortByDate(values.cast);
+                            getActorDetail.actorCache[actor] = {cast: elems};
+
+                            var elems2 = sortByDate(values.crew);
+                            getActorDetail.actorCache[actor].crew = elems2;
+
+                            callDisplay(getActorDetail.actorCache[actor]);
+                        }).success(function () {
+                            return true;
+                        });
+                    }
+                });
+            }
+
+            function callDisplay(elems) {
+                $("#outerDiv").html("");
+                displayData(elems.cast);
+                $("<div>********crew*******</div>").appendTo('#outerDiv');
+                displayData(elems.crew);
+            }
+
+            function displayData(elems) {
+                $div = $('<div>');
+                for (var prop in elems) {
+                    if (elems[prop].poster_path != null)
+                        var src = 'http://image.tmdb.org/t/p/w342' + elems[prop].poster_path;
+                    else
+                        var src = "image/temp.jpg";
+                    $divData = $("<div>" +
+                            "<span class='wrapper'><img src=" + src + "  class='poster'/></span> " +
+                            "<span class='wrapper'><span class='title'>" + elems[prop].title + "</span></span>" +
+                            "<span class='wrapper'>" + elems[prop].release_date + "</span>" +
+                            "</div>");
+                    $divData.addClass("data");
+                    ($divData).appendTo($div);
+                }
+                $div.addClass("innerDiv");
+                $div.appendTo('#outerDiv');
+            }
+
+            function sortByDate(obj) {
+                var elems = $.makeArray(obj);
+                elems.sort(function (a, b) {
+                    return new Date(a.release_date) < new Date(b.release_date);
+                });
+                return elems;
+            }
         }
     </script>
 </head>
 <body>
-<div id="outerDiv">
-
+<div id="searchDiv">
+    <input type="text" id="actor" placeholder="Actor name"/>
 </div>
-
+<div id="outerDiv">
+</div>
 </body>
 </html>
